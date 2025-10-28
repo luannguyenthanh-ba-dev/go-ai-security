@@ -1,0 +1,3 @@
+package config
+
+// Database configuration

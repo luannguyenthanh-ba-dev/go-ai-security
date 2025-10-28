@@ -1,0 +1,93 @@
+---
+alwaysApply: true
+---
+# Cursor Rules for Golang Project - DDD + Clean Architecture (NestJS Inspired)
+
+## 🎯 Architectural Overview
+This project follows **Domain-Driven Design (DDD)** and **Clean Architecture**, inspired by **NestJS module philosophy**.
+Each domain (e.g., `users`, `auth`, `orders`) is organized as an independent module under `/internal`.
+
+The architecture layers are:
+- **Domain** → Pure business rules and entities.
+- **UseCase (Application)** → Business logic orchestration.
+- **Repository (Infrastructure)** → Data persistence (MongoDB, MySQL, Redis...).
+- **Delivery (Interface)** → API handlers (Gin), message consumers (RabbitMQ), etc.
+- **DTOs** → Define input/output models for Delivery layer.
+
+---
+
+## 🧩 Directory Structure Convention
+
+/cmd/
+main.go → Application entrypoint
+/config/ → App configs (env, db connection, etc.)
+/internal/
+/<module>/
+/domain/ → Entities, value objects, domain errors, domain events
+/usecase/ → Application services and interfaces to domain
+/repository/ → Repository interfaces & implementations (e.g., MongoRepo)
+/delivery/http/ → Gin handlers, routes
+/dto/ → Request/Response structs
+/pkg/ → Shared utils (logger, middleware, config loader)
+
+---
+
+## 🧠 Coding Guidelines
+
+1. **Never import across modules** directly.  
+   Only communicate through **interfaces (contracts)**.
+
+2. **Keep business rules pure**:  
+   - Domain layer **must not import infrastructure packages**.  
+   - No dependency on Gin, Mongo, Redis, etc. inside domain or usecase.
+
+3. **Use dependency injection**:  
+   Pass repositories/interfaces into usecase constructors.
+
+4. **Each module = one bounded context**:  
+   - Keep `/internal/users` independent from `/internal/auth`.  
+   - Shared models go into `/pkg/shared` or `/pkg/types`.
+
+5. **DTOs are not domain models**:  
+   Use DTO for external input/output, and convert to domain entity in usecase.
+
+6. **Error handling**:  
+   - Define domain-specific errors in `/domain/errors.go`.  
+   - Wrap infrastructure errors before returning them to usecase.
+
+7. **Logging**:  
+   Use a centralized logger from `/pkg/logger` — do not use `fmt.Println`.
+
+8. **Configuration**:  
+   Use `/pkg/config` to load `.env` or YAML configs once, then inject via constructor.
+
+---
+
+## ⚙️ Naming Conventions
+
+- Packages use lowercase, singular (e.g., `user`, `auth`, `order`).
+- Files follow responsibility naming:
+  - `repository.go`, `usecase.go`, `handler.go`, `dto.go`, etc.
+- Structs use PascalCase: `UserEntity`, `UserUseCase`, `UserRepository`.
+- Interfaces are named by capability: `UserRepository`, `AuthService`.
+
+---
+
+## 🚀 Example Flow (Users Module)
+
+1. `HTTP Handler` (Gin) → receives request → binds DTO.
+2. Handler calls `UserUseCase.CreateUser(dto)`.
+3. UseCase validates data, creates domain entity.
+4. UseCase calls `UserRepository.Save(entity)`.
+5. Repository persists data to MongoDB.
+6. Response sent back via DTO.
+
+---
+
+## 🔐 Example File Paths
+
+/internal/users/domain/user_entity.go
+/internal/users/usecase/user_usecase.go
+/internal/users/repository/user_repository.go
+/internal/users/delivery/http/user_handler.go
+/internal/users/dto/user_dto.go
