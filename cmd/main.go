@@ -13,7 +13,7 @@ import (
 	config "github.com/luannguyenthanh-ba-dev/go-ai-security/config"
 	userHttp "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/delivery/http"
 	userRepository "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/repository"
-	userUsecase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/usecase"
+	userUseCase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/usecase"
 	appLogger "github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/logger"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -67,8 +67,8 @@ func main() {
 	// User routes
 	api := r.Group("/api/v1")
 	mongoUserRepository := userRepository.NewMongoUserRepository(userCollection)
-	userUseCase := userUsecase.NewUserUseCase(mongoUserRepository, cfg.Env.PasswordHashSaltRounds)
-	userHttp.RegisterUserRoutes(api, userUseCase)
+	userService := userUseCase.NewUserService(mongoUserRepository, cfg.Env.PasswordHashSaltRounds)
+	userHttp.RegisterUserRoutes(api, userService)
 
 	// Swagger UI Route (use local generated spec)
 	r.Static("/docs", "./docs") // or: r.StaticFile("/docs/swagger.json", "./docs/swagger.json")

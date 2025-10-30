@@ -15,11 +15,11 @@ import (
 // e.g., the usecase layer
 
 type UserHandler struct {
-	usecase usecase.UserUseCase
+	service usecase.UserService
 }
 
-func NewUserHandler(usecase usecase.UserUseCase) *UserHandler {
-	return &UserHandler{usecase: usecase}
+func NewUserHandler(service usecase.UserService) *UserHandler {
+	return &UserHandler{service: service}
 }
 
 // RegisterUser handles POST /users/register request
@@ -52,7 +52,7 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 		Gender:   req.Gender, // already shared.Gender
 	}
 
-	user, err := h.usecase.CreateUser(c.Request.Context(), userEntity)
+	user, err := h.service.CreateUser(c.Request.Context(), userEntity)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

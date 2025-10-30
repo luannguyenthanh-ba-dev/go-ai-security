@@ -10,20 +10,20 @@ import (
 
 // User use case (application service)
 
-type UserUseCase interface {
+type UserService interface {
 	CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error)
 }
 
-type userUseCase struct {
+type userService struct {
 	repo       repository.UserRepository
 	saltRounds int
 }
 
-func NewUserUseCase(r repository.UserRepository, saltRounds int) UserUseCase {
-	return &userUseCase{repo: r, saltRounds: saltRounds}
+func NewUserService(r repository.UserRepository, saltRounds int) UserService {
+	return &userService{repo: r, saltRounds: saltRounds}
 }
 
-func (u *userUseCase) CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error) {
+func (u *userService) CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error) {
 	// Check existing user by username or email
 
 	// Create user
