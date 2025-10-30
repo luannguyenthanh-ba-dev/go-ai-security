@@ -10,4 +10,5 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error)
+	FindAUserByFilters(ctx context.Context, filters UserFilters) (*domain.UserEntity, error)
 }

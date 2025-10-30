@@ -1,28 +1,32 @@
 package domain
 
-import "errors"
+import (
+	"net/http"
+
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/utils"
+)
 
 // Domain-specific errors
 
 var (
 	// Invalid input errors
-	ErrUserInvalidUsername = errors.New("invalid username")
-	ErrUserInvalidEmail    = errors.New("invalid email")
-	ErrUserInvalidPassword = errors.New("invalid password")
-	ErrUserInvalidName     = errors.New("invalid name")
-	ErrUserInvalidPhone    = errors.New("invalid phone")
-	ErrUserInvalidGender   = errors.New("invalid gender")
-	ErrUserInvalidInput    = errors.New("invalid input data")
+	ErrUserInvalidUsername = utils.NewCustomError("USER_INVALID_USERNAME", http.StatusBadRequest, "invalid username")
+	ErrUserInvalidEmail    = utils.NewCustomError("USER_INVALID_EMAIL", http.StatusBadRequest, "invalid email")
+	ErrUserInvalidPassword = utils.NewCustomError("USER_INVALID_PASSWORD", http.StatusBadRequest, "invalid password")
+	ErrUserInvalidName     = utils.NewCustomError("USER_INVALID_NAME", http.StatusBadRequest, "invalid name")
+	ErrUserInvalidPhone    = utils.NewCustomError("USER_INVALID_PHONE", http.StatusBadRequest, "invalid phone")
+	ErrUserInvalidGender   = utils.NewCustomError("USER_INVALID_GENDER", http.StatusBadRequest, "invalid gender")
+	ErrUserInvalidInput    = utils.NewCustomError("USER_INVALID_INPUT", http.StatusBadRequest, "invalid input data")
 
 	// Conflict errors
-	ErrUserUsernameAlreadyExists = errors.New("username already exists")
-	ErrUserEmailAlreadyExists    = errors.New("email already exists")
-	ErrUserWrongPassword         = errors.New("wrong password")
-	ErrUserNotHasRole            = errors.New("user does not have the required role")
+	ErrUserUsernameAlreadyExists = utils.NewCustomError("USER_USERNAME_ALREADY_EXISTS", http.StatusConflict, "username already exists")
+	ErrUserEmailAlreadyExists    = utils.NewCustomError("USER_EMAIL_ALREADY_EXISTS", http.StatusConflict, "email already exists")
+	ErrUserWrongPassword         = utils.NewCustomError("USER_WRONG_PASSWORD", http.StatusUnauthorized, "wrong password")
+	ErrUserNotHasRole            = utils.NewCustomError("USER_NOT_HAS_ROLE", http.StatusForbidden, "user does not have the required role")
 
 	// Not found errors
-	ErrUserNotFound = errors.New("user not found")
+	ErrUserNotFound = utils.NewCustomError("USER_NOT_FOUND", http.StatusNotFound, "user not found")
 
 	// Internal server errors
-	ErrUserInternalServerError = errors.New("internal server error")
+	ErrUserInternalServerError = utils.NewCustomError("USER_INTERNAL_SERVER_ERROR", http.StatusInternalServerError, "internal server error")
 )

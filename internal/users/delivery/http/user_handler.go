@@ -9,6 +9,7 @@ import (
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/domain"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/dto"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/usecase"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/utils"
 )
 
 // UserHandler holds dependencies for user HTTP handlers
@@ -37,7 +38,7 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 	// Using dto here
 	var req dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		utils.ErrorResponse(c, http.StatusBadRequest, "USER_INVALID_INPUT", err.Error())
 		return
 	}
 
@@ -54,9 +55,16 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 
 	user, err := h.service.CreateUser(c.Request.Context(), userEntity)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		if ce, ok := err.(*utils.CustomError); ok {
+			utils.ErrorResponse(c, ce.HTTPStatus(), ce.Code(), ce.Error())
+			return
+		}
+		utils.ErrorResponse(c,
+			domain.ErrUserInternalServerError.HTTPStatus(),
+			domain.ErrUserInternalServerError.Code(),
+			domain.ErrUserInternalServerError.Error())
 		return
 	}
 
-	c.JSON(http.StatusCreated, user)
+	utils.SuccessResponse(c, http.StatusCreated, user)
 }

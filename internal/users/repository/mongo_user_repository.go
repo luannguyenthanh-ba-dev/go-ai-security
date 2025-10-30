@@ -50,3 +50,41 @@ func (r *mongoUserRepository) CreateUser(ctx context.Context, user *domain.UserE
 
 	return user, nil
 }
+
+// Mongo - FindAUserByFilters finds a user by filters
+func (r *mongoUserRepository) FindAUserByFilters(ctx context.Context, filters UserFilters) (*domain.UserEntity, error) {
+	filter := primitive.D{}
+
+	// Add ID filter if provided
+	if filters.ID != nil {
+		filter = append(filter, primitive.E{Key: "_id", Value: *filters.ID})
+	}
+	// Add Username filter if provided
+	if filters.Username != nil {
+		filter = append(filter, primitive.E{Key: "username", Value: *filters.Username})
+	}
+	// Add Email filter if provided
+	if filters.Email != nil {
+		filter = append(filter, primitive.E{Key: "email", Value: *filters.Email})
+	}
+	// Add Phone filter if provided
+	if filters.Phone != nil {
+		filter = append(filter, primitive.E{Key: "phone", Value: primitive.E{Key: "$regex", Value: primitive.Regex{Pattern: *filters.Phone, Options: "i"}}}) // case insensitive regex
+	}
+	// if filters.FromTime != nil {
+	// 	filter = append(filter, primitive.E{Key: "created_at", Value: primitive.E{Key: "$gte", Value: *filters.FromTime}})
+	// }
+	// if filters.ToTime != nil {
+	// 	filter = append(filter, primitive.E{Key: "created_at", Value: primitive.E{Key: "$lte", Value: *filters.ToTime}})
+	// }
+
+	// Find one user by filters
+	user := &domain.UserEntity{} // Use pointer becaus
+	err := r.collection.FindOne(ctx, filter).Decode(user)
+	if err != nil {
+		zap.L().Error("error finding user by filters", zap.Error(err))
+		return nil, domain.ErrUserInternalServerError
+	}
+
+	return user, nil
+}
