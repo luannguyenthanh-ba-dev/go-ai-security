@@ -5,12 +5,15 @@ package main
 // @title           Go AI Security API
 // @version         1.0
 // @description     Backend API for AI Security project.
-// @BasePath        /
+// @BasePath        /api/v1
 // @schemes         http
 
 import (
 	"github.com/gin-gonic/gin"
 	config "github.com/luannguyenthanh-ba-dev/go-ai-security/config"
+	userHttp "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/delivery/http"
+	userRepository "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/repository"
+	userUsecase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/usecase"
 	appLogger "github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/logger"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -35,6 +38,15 @@ func main() {
 		zap.String("port", cfg.Env.Port),
 	)
 
+	// MongoDB setup
+	mongoDatabase, err := config.NewMongoDatabase(cfg.Env.MongoURI, cfg.Env.MongoDatabase)
+	if err != nil {
+		zap.L().Fatal("failed to create MongoDB database", zap.Error(err))
+	}
+	defer mongoDatabase.Close()
+
+	userCollection := mongoDatabase.Database.Collection("users")
+
 	// Gin setup
 	if cfg.Env.AppEnv == "production" {
 		// Set the Gin mode to release mode for production environment
@@ -52,7 +64,14 @@ func main() {
 	// Basic health endpoint
 	r.GET("/health", healthHandler)
 
+	// User routes
+	api := r.Group("/api/v1")
+	mongoUserRepository := userRepository.NewMongoUserRepository(userCollection)
+	userUseCase := userUsecase.NewUserUseCase(mongoUserRepository, cfg.Env.PasswordHashSaltRounds)
+	userHttp.RegisterUserRoutes(api, userUseCase)
+
 	// Swagger UI Route (use local generated spec)
+	r.Static("/docs", "./docs") // or: r.StaticFile("/docs/swagger.json", "./docs/swagger.json")
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler, ginSwagger.URL("/docs/swagger.json")))
 
 	// Set the address to the port specified in the environment variables
