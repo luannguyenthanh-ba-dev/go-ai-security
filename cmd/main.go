@@ -9,11 +9,19 @@ package main
 // @schemes         http
 
 import (
+	"time"
+
 	"github.com/gin-gonic/gin"
 	config "github.com/luannguyenthanh-ba-dev/go-ai-security/config"
+
+	// User
 	userHttp "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/delivery/http"
 	userRepository "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/repository"
 	userUseCase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/usecase"
+
+	// Auth
+	authHttp "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/delivery/http"
+	authUseCase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/usecase"
 	appLogger "github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/logger"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
@@ -66,9 +74,15 @@ func main() {
 
 	// User routes
 	api := r.Group("/api/v1")
+	// User routes
 	mongoUserRepository := userRepository.NewMongoUserRepository(userCollection)
 	userService := userUseCase.NewUserService(mongoUserRepository, cfg.Env.PasswordHashSaltRounds)
 	userHttp.RegisterUserRoutes(api, userService)
+
+	// Auth routes
+	jwtService := authUseCase.NewJWTService(cfg.Env.JWTSecret, time.Duration(cfg.Env.JWTExpiresIn) * time.Second)
+	authService := authUseCase.NewAuthService(userService, jwtService)
+	authHttp.RegisterAuthRoutes(api, authService)
 
 	// Swagger UI Route (use local generated spec)
 	r.Static("/docs", "./docs") // or: r.StaticFile("/docs/swagger.json", "./docs/swagger.json")

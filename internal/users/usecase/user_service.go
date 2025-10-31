@@ -92,8 +92,5 @@ func (service *userService) FindAUserByFilters(ctx context.Context, filters repo
 	if user == nil {
 		return nil, domain.ErrUserNotFound
 	}
-	// Clear password from response
-	user.Password = ""
-
 	return user, nil
 }

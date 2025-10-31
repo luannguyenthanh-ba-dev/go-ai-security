@@ -8,8 +8,8 @@ import (
 )
 
 func RegisterUserRoutes(router *gin.RouterGroup, userService usecase.UserService) {
-	users := router.Group("/users")
 	userHandler := NewUserHandler(userService)
+	users := router.Group("/users")
 	{
 		users.POST("/register", userHandler.RegisterUser)
 		// users.GET("/me", NewUserHandler(userService).GetMe)

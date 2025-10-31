@@ -38,21 +38,21 @@ func NewUserHandler(service usecase.UserService) *UserHandler {
 // @Router /users/register [post]
 func (h *UserHandler) RegisterUser(c *gin.Context) {
 	// Using dto here
-	var req dto.CreateUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	var data dto.CreateUserRequest
+	if err := c.ShouldBindJSON(&data); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "USER_INVALID_INPUT", err.Error())
 		return
 	}
 
 	// Map DTO to domain entity
 	userEntity := &domain.UserEntity{
-		Username: req.Username,
-		Email:    req.Email,
-		Password: req.Password,
-		Name:     req.Name,
-		Phone:    req.Phone,
-		Address:  req.Address,
-		Gender:   req.Gender, // already shared.Gender
+		Username: data.Username,
+		Email:    data.Email,
+		Password: data.Password,
+		Name:     data.Name,
+		Phone:    data.Phone,
+		Address:  data.Address,
+		Gender:   data.Gender, // already shared.Gender
 	}
 
 	user, err := h.service.CreateUser(c.Request.Context(), userEntity)
@@ -136,6 +136,8 @@ func (h *UserHandler) ViewUserInformation(c *gin.Context) {
 			domain.ErrUserNotFound.Error())
 		return
 	}
+	// Clear password from response
+	user.Password = ""
 
 	utils.SuccessResponse(c, http.StatusOK, user)
 }

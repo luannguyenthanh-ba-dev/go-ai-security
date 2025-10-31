@@ -19,7 +19,7 @@ type Env struct {
 	EmailResendAPIKey      string `mapstructure:"EMAIL_RESEND_API_KEY"`
 	PasswordHashSaltRounds int    `mapstructure:"PASSWORD_HASH_SALT_ROUNDS"`
 	JWTSecret              string `mapstructure:"JWT_SECRET"`
-	JWTExpiresIn           string `mapstructure:"JWT_EXPIRES_IN"`
+	JWTExpiresIn           int    `mapstructure:"JWT_EXPIRES_IN"`
 }
 
 // Return *Env and error: *Env is the environment variables configuration, error is the error if any

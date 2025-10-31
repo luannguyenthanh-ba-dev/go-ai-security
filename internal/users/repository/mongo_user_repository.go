@@ -87,7 +87,7 @@ func (r *mongoUserRepository) FindAUserByFilters(ctx context.Context, filters Us
 	err := r.collection.FindOne(ctx, filter).Decode(user)
 	if err != nil {
 		zap.L().Error("error finding user by filters", zap.Error(err))
-		return nil, domain.ErrUserInternalServerError
+		return nil, domain.ErrUserNotFound
 	}
 
 	return user, nil
