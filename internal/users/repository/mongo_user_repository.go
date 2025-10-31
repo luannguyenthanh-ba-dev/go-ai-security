@@ -69,7 +69,11 @@ func (r *mongoUserRepository) FindAUserByFilters(ctx context.Context, filters Us
 	}
 	// Add Phone filter if provided
 	if filters.Phone != nil {
-		filter = append(filter, primitive.E{Key: "phone", Value: primitive.E{Key: "$regex", Value: primitive.Regex{Pattern: *filters.Phone, Options: "i"}}}) // case insensitive regex
+		filter = append(filter, primitive.E{Key: "phone",
+			Value: primitive.E{Key: "$regex",
+				Value: primitive.Regex{Pattern: *filters.Phone, Options: "i"},
+			},
+		}) // case insensitive regex
 	}
 	// if filters.FromTime != nil {
 	// 	filter = append(filter, primitive.E{Key: "created_at", Value: primitive.E{Key: "$gte", Value: *filters.FromTime}})
@@ -79,7 +83,7 @@ func (r *mongoUserRepository) FindAUserByFilters(ctx context.Context, filters Us
 	// }
 
 	// Find one user by filters
-	user := &domain.UserEntity{} // Use pointer becaus
+	user := &domain.UserEntity{} // Use pointer because we want to return the user by reference
 	err := r.collection.FindOne(ctx, filter).Decode(user)
 	if err != nil {
 		zap.L().Error("error finding user by filters", zap.Error(err))

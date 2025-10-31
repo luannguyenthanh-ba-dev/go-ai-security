@@ -9,7 +9,10 @@ import (
 
 func RegisterUserRoutes(router *gin.RouterGroup, userService usecase.UserService) {
 	users := router.Group("/users")
+	userHandler := NewUserHandler(userService)
 	{
-		users.POST("/register", NewUserHandler(userService).RegisterUser)
+		users.POST("/register", userHandler.RegisterUser)
+		// users.GET("/me", NewUserHandler(userService).GetMe)
+		users.GET("/:id", userHandler.ViewUserInformation)
 	}
 }

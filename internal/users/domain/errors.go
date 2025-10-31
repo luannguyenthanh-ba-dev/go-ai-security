@@ -17,6 +17,7 @@ var (
 	ErrUserInvalidPhone    = utils.NewCustomError("USER_INVALID_PHONE", http.StatusBadRequest, "invalid phone")
 	ErrUserInvalidGender   = utils.NewCustomError("USER_INVALID_GENDER", http.StatusBadRequest, "invalid gender")
 	ErrUserInvalidInput    = utils.NewCustomError("USER_INVALID_INPUT", http.StatusBadRequest, "invalid input data")
+	ErrUserInvalidID       = utils.NewCustomError("USER_INVALID_ID", http.StatusBadRequest, "invalid user id")
 
 	// Conflict errors
 	ErrUserUsernameAlreadyExists = utils.NewCustomError("USER_USERNAME_ALREADY_EXISTS", http.StatusConflict, "username already exists")

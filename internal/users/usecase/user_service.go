@@ -14,6 +14,7 @@ import (
 
 type UserService interface {
 	CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error)
+	FindAUserByFilters(ctx context.Context, filters repository.UserFilters) (*domain.UserEntity, error)
 }
 
 type userService struct {
@@ -25,12 +26,12 @@ func NewUserService(r repository.UserRepository, saltRounds int) UserService {
 	return &userService{repo: r, saltRounds: saltRounds}
 }
 
-func (u *userService) CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error) {
+func (service *userService) CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error) {
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Check existing user by username or email
 	g.Go(func() error {
-		existingEmailUser, err := u.repo.FindAUserByFilters(ctx, repository.UserFilters{
+		existingEmailUser, err := service.repo.FindAUserByFilters(ctx, repository.UserFilters{
 			Email: &user.Email,
 		})
 		if err != nil {
@@ -45,7 +46,7 @@ func (u *userService) CreateUser(ctx context.Context, user *domain.UserEntity) (
 
 	// Check existing user by username
 	g.Go(func() error {
-		existingUsernameUser, err := u.repo.FindAUserByFilters(ctx, repository.UserFilters{
+		existingUsernameUser, err := service.repo.FindAUserByFilters(ctx, repository.UserFilters{
 			Username: &user.Username,
 		})
 		if err != nil {
@@ -66,17 +67,31 @@ func (u *userService) CreateUser(ctx context.Context, user *domain.UserEntity) (
 
 	// Create user
 	// Hash password
-	hashedPassword, err := utils.HashPassword(user.Password, u.saltRounds)
+	hashedPassword, err := utils.HashPassword(user.Password, service.saltRounds)
 	if err != nil {
 		return nil, err
 	}
 	user.Password = hashedPassword
 
-	user, err = u.repo.CreateUser(ctx, user)
+	user, err = service.repo.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err
 	}
 
+	// Clear password from response
+	user.Password = ""
+
+	return user, nil
+}
+
+func (service *userService) FindAUserByFilters(ctx context.Context, filters repository.UserFilters) (*domain.UserEntity, error) {
+	user, err := service.repo.FindAUserByFilters(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
 	// Clear password from response
 	user.Password = ""
 

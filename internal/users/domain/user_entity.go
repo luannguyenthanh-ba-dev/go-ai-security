@@ -11,14 +11,14 @@ import (
 
 type UserEntity struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Username  string             `bson:"username,omitempty" json:"username,omitempty"`
-	Email     string             `bson:"email,omitempty" json:"email,omitempty"`
-	Password  string             `bson:"password,omitempty" json:"-"` // Password is not returned in the response
-	Name      string             `bson:"name,omitempty" json:"name,omitempty"`
-	Phone     string             `bson:"phone" json:"phone"`
-	Address   string             `bson:"address" json:"address"`
-	Role      shared.Role        `bson:"role" json:"role"`
-	Gender    shared.Gender      `bson:"gender" json:"gender"`
+	Username  string             `bson:"username,required" json:"username" binding:"required,min=5,max=20"`
+	Email     string             `bson:"email,required" json:"email" binding:"required,email"`
+	Password  string             `bson:"password,required" json:"-"`
+	Name      string             `bson:"name,required" json:"name" binding:"required,min=3,max=50"`
+	Phone     string             `bson:"phone,omitempty" json:"phone,omitempty"`
+	Address   string             `bson:"address,omitempty" json:"address,omitempty"`
+	Role      shared.Role        `bson:"role,required" json:"role" binding:"required"`
+	Gender    shared.Gender      `bson:"gender,omitempty" json:"gender,omitempty"`
 	CreatedAt int64              `bson:"created_at,omitempty" json:"created_at,omitempty"`
 	UpdatedAt int64              `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
 }
