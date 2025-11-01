@@ -29,46 +29,38 @@ import (
 )
 
 func main() {
-	// Initialize colorized console logger
-	cfg, err := config.LoadConfig()
-
-	logger, _ := appLogger.New(cfg.Env.AppEnv == "production")
+	logger, _ := appLogger.New(false) // Default to development mode
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger)
 
+	// Load configuration
+	zap.L().Info("Loading configuration...")
+	cfg, err := config.LoadConfig()
 	if err != nil {
 		zap.L().Fatal("failed to load config", zap.Error(err))
 	}
+	zap.L().Info("Configuration loaded successfully")
 
-	zap.L().Info("configuration loaded",
-		zap.String("appName", cfg.Env.AppName),
-		zap.String("env", cfg.Env.AppEnv),
-		zap.String("port", cfg.Env.Port),
-	)
-
-	// MongoDB setup with retry mechanism
-	mongoConfig := config.MongoDBConfig{
-		URI:        cfg.Env.MongoURI,
-		Database:   cfg.Env.MongoDatabase,
-		MaxRetries: 4,               // Retry up to 4 times
-		RetryDelay: 2 * time.Second, // Wait 2 seconds between retries (with exponential backoff)
-	}
-	mongoDatabase, err := config.NewMongoDatabase(mongoConfig)
-	if err != nil {
-		zap.L().Fatal("failed to create MongoDB database", zap.Error(err))
-	}
-	defer mongoDatabase.Close()
-
-	userCollection := mongoDatabase.Database.Collection("users")
-
-	// Gin setup
+	// Update logger mode based on config (if needed)
 	if cfg.Env.AppEnv == "production" {
+		logger, _ := appLogger.New(true)
+		defer logger.Sync()
+		zap.ReplaceGlobals(logger)
 		// Set the Gin mode to release mode for production environment
 		gin.SetMode(gin.ReleaseMode)
 	} else {
 		// Set the Gin mode to debug mode for development environment
 		gin.SetMode(gin.DebugMode)
 	}
+
+	zap.L().Info("Application initialized",
+		zap.String("appName", cfg.Env.AppName),
+		zap.String("env", cfg.Env.AppEnv),
+		zap.String("port", cfg.Env.Port),
+	)
+
+	// Close the database connection when the application exits
+	defer cfg.Database.Close()
 
 	// Create a new Gin instance
 	r := gin.New()
@@ -77,6 +69,9 @@ func main() {
 
 	// Basic health endpoint
 	r.GET("/health", healthHandler)
+
+	// Collections
+	userCollection := cfg.Database.Database.Collection("users")
 
 	// User routes
 	api := r.Group("/api/v1")
