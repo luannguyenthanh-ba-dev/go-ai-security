@@ -46,8 +46,14 @@ func main() {
 		zap.String("port", cfg.Env.Port),
 	)
 
-	// MongoDB setup
-	mongoDatabase, err := config.NewMongoDatabase(cfg.Env.MongoURI, cfg.Env.MongoDatabase)
+	// MongoDB setup with retry mechanism
+	mongoConfig := config.MongoDBConfig{
+		URI:        cfg.Env.MongoURI,
+		Database:   cfg.Env.MongoDatabase,
+		MaxRetries: 4,               // Retry up to 4 times
+		RetryDelay: 2 * time.Second, // Wait 2 seconds between retries (with exponential backoff)
+	}
+	mongoDatabase, err := config.NewMongoDatabase(mongoConfig)
 	if err != nil {
 		zap.L().Fatal("failed to create MongoDB database", zap.Error(err))
 	}
@@ -80,7 +86,7 @@ func main() {
 	userHttp.RegisterUserRoutes(api, userService)
 
 	// Auth routes
-	jwtService := authUseCase.NewJWTService(cfg.Env.JWTSecret, time.Duration(cfg.Env.JWTExpiresIn) * time.Second)
+	jwtService := authUseCase.NewJWTService(cfg.Env.JWTSecret, time.Duration(cfg.Env.JWTExpiresIn)*time.Second)
 	authService := authUseCase.NewAuthService(userService, jwtService)
 	authHttp.RegisterAuthRoutes(api, authService)
 
