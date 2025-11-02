@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/shared"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

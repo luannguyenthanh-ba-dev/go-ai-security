@@ -7,12 +7,19 @@ import (
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/usecase"
 )
 
-func RegisterUserRoutes(router *gin.RouterGroup, userService usecase.UserService) {
+func RegisterUserPublicRoutes(router *gin.RouterGroup, userService usecase.UserService) {
 	userHandler := NewUserHandler(userService)
 	users := router.Group("/users")
 	{
 		users.POST("/register", userHandler.RegisterUser)
-		// users.GET("/me", NewUserHandler(userService).GetMe)
 		users.GET("/:id", userHandler.ViewUserInformation)
+	}
+}
+
+func RegisterUserProtectedRoutes(router *gin.RouterGroup, userService usecase.UserService) {
+	userHandler := NewUserHandler(userService)
+	users := router.Group("/users")
+	{
+		users.GET("/me", userHandler.GetMe)
 	}
 }

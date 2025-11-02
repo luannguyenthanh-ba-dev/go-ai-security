@@ -7,6 +7,10 @@ package main
 // @description     Backend API for AI Security project.
 // @BasePath        /api/v1
 // @schemes         http
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
 
 import (
 	"time"
@@ -23,6 +27,7 @@ import (
 	authHttp "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/delivery/http"
 	authUseCase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/usecase"
 	appLogger "github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/logger"
+	middleware "github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/middleware"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"go.uber.org/zap"
@@ -70,20 +75,34 @@ func main() {
 	// Basic health endpoint
 	r.GET("/health", healthHandler)
 
+	// Initialize JWT service
+	jwtService := authUseCase.NewJWTService(cfg.Env.JWTSecret, time.Duration(cfg.Env.JWTExpiresIn)*time.Second)
+
 	// Collections
 	userCollection := cfg.Database.Database.Collection("users")
 
-	// User routes
-	api := r.Group("/api/v1")
-	// User routes
+	// Initialize services and dependencies
 	mongoUserRepository := userRepository.NewMongoUserRepository(userCollection)
 	userService := userUseCase.NewUserService(mongoUserRepository, cfg.Env.PasswordHashSaltRounds)
-	userHttp.RegisterUserRoutes(api, userService)
-
-	// Auth routes
-	jwtService := authUseCase.NewJWTService(cfg.Env.JWTSecret, time.Duration(cfg.Env.JWTExpiresIn)*time.Second)
 	authService := authUseCase.NewAuthService(userService, jwtService)
-	authHttp.RegisterAuthRoutes(api, authService)
+
+	// Initialize middleware
+	authMiddleware := middleware.NewMiddleware(jwtService)
+
+	// API routes
+	api := r.Group("/api/v1")
+	{
+		// Public routes (no authentication required)
+		userHttp.RegisterUserPublicRoutes(api, userService)
+		authHttp.RegisterAuthPublicRoutes(api, authService)
+
+		// Protected routes (require authentication)
+		protected := api.Group("")
+		protected.Use(authMiddleware.AuthJWTMiddleware())
+		{
+			userHttp.RegisterUserProtectedRoutes(protected, userService)
+		}
+	}
 
 	// Swagger UI Route (use local generated spec)
 	r.Static("/docs", "./docs") // or: r.StaticFile("/docs/swagger.json", "./docs/swagger.json")

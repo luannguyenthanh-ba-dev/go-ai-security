@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/shared"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/domain"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -86,6 +86,9 @@ func (r *mongoUserRepository) FindAUserByFilters(ctx context.Context, filters Us
 	user := &domain.UserEntity{} // Use pointer because we want to return the user by reference
 	err := r.collection.FindOne(ctx, filter).Decode(user)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 		zap.L().Error("error finding user by filters", zap.Error(err))
 		return nil, domain.ErrUserNotFound
 	}

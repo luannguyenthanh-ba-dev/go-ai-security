@@ -6,10 +6,18 @@ import (
 )
 
 // HTTP routes configuration
-func RegisterAuthRoutes(router *gin.RouterGroup, authService usecase.AuthService) {
+func RegisterAuthPublicRoutes(router *gin.RouterGroup, authService usecase.AuthService) {
 	authHandler := NewAuthHandler(authService)
 	auth := router.Group("/auth")
 	{
 		auth.POST("/login", authHandler.Login)
+	}
+}
+
+func RegisterAuthProtectedRoutes(router *gin.RouterGroup, authService usecase.AuthService) {
+	authHandler := NewAuthHandler(authService)
+	auth := router.Group("/auth")
+	{
+		auth.POST("/tokens/refresh", authHandler.RefreshAccessToken)
 	}
 }

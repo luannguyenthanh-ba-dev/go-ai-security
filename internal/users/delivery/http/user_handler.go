@@ -55,7 +55,7 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 		Gender:   data.Gender, // already shared.Gender
 	}
 
-	user, err := h.service.CreateUser(c.Request.Context(), userEntity)
+	user, err := h.service.RegisterUser(c.Request.Context(), userEntity)
 	if err != nil {
 		if ce, ok := err.(*utils.CustomError); ok {
 			utils.ErrorResponse(c, ce.HTTPStatus(), ce.Code(), ce.Error())
@@ -71,20 +71,60 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, user)
 }
 
-// func (h *UserHandler) GetMe(c *gin.Context) {
-// 	// Get the user id from the context
-// 	userID := c.Param("id")
-// 	user, err := h.service.GetUserByID(c.Request.Context(), userID)
-// 	if err != nil {
-// 		if ce, ok := err.(*utils.CustomError); ok {
-// 			utils.ErrorResponse(c, ce.HTTPStatus(), ce.Code(), ce.Error())
-// 			return
-// 		}
-// 		utils.ErrorResponse(c, domain.ErrUserInternalServerError.HTTPStatus(), domain.ErrUserInternalServerError.Code(), domain.ErrUserInternalServerError.Error())
-// 		return
-// 	}
-// 	utils.SuccessResponse(c, http.StatusOK, user)
-// }
+// GetMe handles GET /users/me request
+// @Summary Get me
+// @Description Get me information
+// @Tags Users
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/me [get]
+func (h *UserHandler) GetMe(c *gin.Context) {
+	// Get the user id from the context
+	userID, exists := c.Get("request_user_id")
+	if !exists {
+		utils.ErrorResponse(c,
+			domain.ErrUserNotFoundInContext.HTTPStatus(),
+			domain.ErrUserNotFoundInContext.Code(),
+			domain.ErrUserNotFoundInContext.Error())
+		return
+	}
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		utils.ErrorResponse(c,
+			domain.ErrUserInvalidID.HTTPStatus(),
+			domain.ErrUserInvalidID.Code(),
+			domain.ErrUserInvalidID.Error())
+		return
+	}
+	user, err := h.service.FindAUserByFilters(c.Request.Context(), repository.UserFilters{ID: &userObjectID})
+	if err != nil {
+		if ce, ok := err.(*utils.CustomError); ok {
+			utils.ErrorResponse(c, ce.HTTPStatus(), ce.Code(), ce.Error())
+			return
+		}
+		utils.ErrorResponse(c,
+			domain.ErrUserInternalServerError.HTTPStatus(),
+			domain.ErrUserInternalServerError.Code(),
+			domain.ErrUserInternalServerError.Error())
+		return
+	}
+
+	if user == nil {
+		utils.ErrorResponse(c,
+			domain.ErrUserNotFound.HTTPStatus(),
+			domain.ErrUserNotFound.Code(),
+			domain.ErrUserNotFound.Error())
+		return
+	}
+	// Clear password from response
+	user.Password = ""
+
+	utils.SuccessResponse(c, http.StatusOK, user)
+}
 
 // ViewUserInformation handles GET /users/:id request
 // @Summary View user information

@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/shared"
+import "github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
 
 // User DTOs for request/response
 

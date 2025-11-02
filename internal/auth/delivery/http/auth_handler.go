@@ -56,3 +56,11 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	}
 	utils.SuccessResponse(c, http.StatusCreated, auth)
 }
+
+func (h *AuthHandler) RefreshAccessToken(c *gin.Context) {
+	var data dto.RefreshAccessTokenRequest
+	if err := c.ShouldBindJSON(&data); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "AUTH_INVALID_INPUT", err.Error())
+		return
+	}
+}

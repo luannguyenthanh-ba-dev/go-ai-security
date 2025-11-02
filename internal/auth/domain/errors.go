@@ -24,6 +24,18 @@ var (
 		http.StatusUnauthorized,
 		"jwt refresh token expired",
 	)
+	ErrInvalidJWTTokenClaims = utils.NewCustomError("INVALID_JWT_TOKEN_CLAIMS",
+		http.StatusUnauthorized,
+		"invalid jwt token claims",
+	)
+	ErrJWTTokenInvalidSigningMethod = utils.NewCustomError("JWT_TOKEN_INVALID_SIGNING_METHOD",
+		http.StatusUnauthorized,
+		"invalid jwt token signing method",
+	)
+	ErrorParsingJWTToken = utils.NewCustomError("ERROR_PARSING_JWT_TOKEN",
+		http.StatusUnauthorized,
+		"error parsing jwt token",
+	)
 
 	// Not found errors
 	ErrAuthUserNotFound = utils.NewCustomError("AUTH_USER_NOT_FOUND", http.StatusNotFound, "user not found")

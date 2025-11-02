@@ -13,7 +13,7 @@ import (
 // User use case (application service)
 
 type UserService interface {
-	CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error)
+	RegisterUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error)
 	FindAUserByFilters(ctx context.Context, filters repository.UserFilters) (*domain.UserEntity, error)
 }
 
@@ -26,12 +26,14 @@ func NewUserService(r repository.UserRepository, saltRounds int) UserService {
 	return &userService{repo: r, saltRounds: saltRounds}
 }
 
-func (service *userService) CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error) {
-	g, ctx := errgroup.WithContext(ctx)
+func (service *userService) RegisterUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error) {
+	// Use separate context for parallel checks
+	// This allows canceling the checks if one fails, but preserves original context for CreateUser
+	g, checkCtx := errgroup.WithContext(ctx)
 
 	// Check existing user by username or email
 	g.Go(func() error {
-		existingEmailUser, err := service.repo.FindAUserByFilters(ctx, repository.UserFilters{
+		existingEmailUser, err := service.repo.FindAUserByFilters(checkCtx, repository.UserFilters{
 			Email: &user.Email,
 		})
 		if err != nil {
@@ -46,7 +48,7 @@ func (service *userService) CreateUser(ctx context.Context, user *domain.UserEnt
 
 	// Check existing user by username
 	g.Go(func() error {
-		existingUsernameUser, err := service.repo.FindAUserByFilters(ctx, repository.UserFilters{
+		existingUsernameUser, err := service.repo.FindAUserByFilters(checkCtx, repository.UserFilters{
 			Username: &user.Username,
 		})
 		if err != nil {
@@ -73,6 +75,8 @@ func (service *userService) CreateUser(ctx context.Context, user *domain.UserEnt
 	}
 	user.Password = hashedPassword
 
+	// Use original context (not the errgroup context) for CreateUser
+	// The errgroup context may be canceled after g.Wait(), but we still need to create the user
 	user, err = service.repo.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err

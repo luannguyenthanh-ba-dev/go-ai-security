@@ -5,7 +5,7 @@ package domain
 import (
 	"time"
 
-	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/shared"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

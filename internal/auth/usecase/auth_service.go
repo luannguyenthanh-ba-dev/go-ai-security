@@ -7,6 +7,7 @@ import (
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/dto"
 	usersRepository "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/repository"
 	userUseCase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/usecase"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/utils"
 )
 
@@ -39,7 +40,7 @@ func (service *authService) Login(ctx context.Context, data *dto.LoginRequest) (
 		return nil, domain.ErrInvalidPassword
 	}
 	// Generate JWT
-	auth, err := service.jwtService.GenerateJWT(&Claims{
+	auth, err := service.jwtService.GenerateJWT(&shared.Claims{
 		UserID:   user.ID.Hex(),
 		Username: user.Username,
 		Email:    user.Email,

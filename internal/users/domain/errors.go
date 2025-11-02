@@ -26,7 +26,8 @@ var (
 	ErrUserNotHasRole            = utils.NewCustomError("USER_NOT_HAS_ROLE", http.StatusForbidden, "user does not have the required role")
 
 	// Not found errors
-	ErrUserNotFound = utils.NewCustomError("USER_NOT_FOUND", http.StatusNotFound, "user not found")
+	ErrUserNotFound          = utils.NewCustomError("USER_NOT_FOUND", http.StatusNotFound, "user not found")
+	ErrUserNotFoundInContext = utils.NewCustomError("USER_NOT_FOUND_IN_CONTEXT", http.StatusNotFound, "user not found in context")
 
 	// Internal server errors
 	ErrUserInternalServerError = utils.NewCustomError("USER_INTERNAL_SERVER_ERROR", http.StatusInternalServerError, "internal server error")
