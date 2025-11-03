@@ -53,6 +53,7 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 		Phone:    data.Phone,
 		Address:  data.Address,
 		Gender:   data.Gender, // already shared.Gender
+		Avatar:   data.Avatar,
 	}
 
 	user, err := h.service.RegisterUser(c.Request.Context(), userEntity)
@@ -180,4 +181,56 @@ func (h *UserHandler) ViewUserInformation(c *gin.Context) {
 	user.Password = ""
 
 	utils.SuccessResponse(c, http.StatusOK, user)
+}
+
+// UpdateMe handles PUT /users/me request
+// @Summary Update me
+// @Description Update my information
+// @Tags Users
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param body body dto.UpdateMyProfileRequest true "User information"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/me [put]
+func (h *UserHandler) UpdateMe( c *gin.Context) {
+	// Get the user id from the context
+	userID, exists := c.Get("request_user_id")
+	if !exists {
+		utils.ErrorResponse(c,
+			domain.ErrUserNotFoundInContext.HTTPStatus(),
+			domain.ErrUserNotFoundInContext.Code(),
+			domain.ErrUserNotFoundInContext.Error())
+		return
+	}
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		utils.ErrorResponse(c,
+			domain.ErrUserInvalidID.HTTPStatus(),
+			domain.ErrUserInvalidID.Code(),
+			domain.ErrUserInvalidID.Error())
+		return
+	}
+
+	var data = &dto.UpdateMyProfileRequest{}
+	if err := c.ShouldBindJSON(data); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "USER_INVALID_INPUT", err.Error())
+		return
+	}
+
+	result, err := h.service.UpdateUserProfile(c.Request.Context(), &userObjectID, data)
+	if err != nil {
+		if ce, ok := err.(*utils.CustomError); ok {
+			utils.ErrorResponse(c, ce.HTTPStatus(), ce.Code(), ce.Error())
+			return
+		}
+		utils.ErrorResponse(c,
+			domain.ErrUserInternalServerError.HTTPStatus(),
+			domain.ErrUserInternalServerError.Code(),
+			domain.ErrUserInternalServerError.Error())
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, result)
 }

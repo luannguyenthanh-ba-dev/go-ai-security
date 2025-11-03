@@ -31,7 +31,7 @@ var (
 )
 
 type Middleware interface {
-	AuthJWTMiddleware() gin.HandlerFunc
+	AuthnJWTMiddleware() gin.HandlerFunc
 }
 
 type middleware struct {
@@ -42,7 +42,7 @@ func NewMiddleware(jwtService usecase.JWTService) Middleware {
 	return &middleware{jwtService: jwtService}
 }
 
-func (m *middleware) AuthJWTMiddleware() gin.HandlerFunc {
+func (m *middleware) AuthnJWTMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token := c.GetHeader("Authorization")
 		if token == "" {

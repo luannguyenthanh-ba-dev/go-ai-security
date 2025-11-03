@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/domain"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.uber.org/zap"
@@ -22,7 +22,7 @@ func NewMongoUserRepository(collection *mongo.Collection) UserRepository {
 }
 
 // Mongo - CreateUser creates a new user in the database and returns the created user
-func (r *mongoUserRepository) CreateUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error) {
+func (r *mongoUserRepository) CreateNew(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error) {
 	if user == nil {
 		zap.L().Error("user is nil", zap.Any("user", user))
 		return nil, domain.ErrUserInvalidInput
@@ -52,7 +52,7 @@ func (r *mongoUserRepository) CreateUser(ctx context.Context, user *domain.UserE
 }
 
 // Mongo - FindAUserByFilters finds a user by filters
-func (r *mongoUserRepository) FindAUserByFilters(ctx context.Context, filters UserFilters) (*domain.UserEntity, error) {
+func (r *mongoUserRepository) FindOneByFilters(ctx context.Context, filters UserFilters) (*domain.UserEntity, error) {
 	filter := primitive.D{}
 
 	// Add ID filter if provided
@@ -94,4 +94,78 @@ func (r *mongoUserRepository) FindAUserByFilters(ctx context.Context, filters Us
 	}
 
 	return user, nil
+}
+
+func (r *mongoUserRepository) UpdateBasicInfoByID(ctx context.Context, userID *primitive.ObjectID, updateData *domain.UserEntity) (bool, error) {
+	if updateData == nil {
+		zap.L().Error("update data is nil", zap.Any("update data", updateData))
+		return false, domain.ErrUserInvalidInput
+	}
+
+	if userID == nil {
+		zap.L().Error("user id is nil to update", zap.Any("user id", userID))
+		return false, domain.ErrUserInvalidID
+	}
+
+	// Build update document - only include fields that have values (not empty)
+	update := primitive.D{}
+
+	// Only update Name if provided (non-empty)
+	if updateData.Name != "" {
+		update = append(update, primitive.E{Key: "name", Value: updateData.Name})
+	}
+
+	// Only update Phone if provided (non-empty)
+	if updateData.Phone != "" {
+		update = append(update, primitive.E{Key: "phone", Value: updateData.Phone})
+	}
+
+	// Only update Address if provided (non-empty)
+	if updateData.Address != "" {
+		update = append(update, primitive.E{Key: "address", Value: updateData.Address})
+	}
+
+	// Only update Gender if provided (non-zero)
+	if updateData.Gender.IsValid() {
+		update = append(update, primitive.E{Key: "gender", Value: updateData.Gender})
+	}
+
+	// Only update Role if provided (non-empty)
+	if updateData.Role.IsValid() {
+		update = append(update, primitive.E{Key: "role", Value: updateData.Role})
+	}
+
+	// Only update Avatar if provided (non-empty)
+	if updateData.Avatar != "" {
+		update = append(update, primitive.E{Key: "avatar", Value: updateData.Avatar})
+	}
+
+	// Only update password if provided (non-empty)
+	if updateData.Password != "" {
+		update = append(update, primitive.E{Key: "password", Value: updateData.Password})
+	}
+
+	// If no fields to update, return early
+	if len(update) == 0 {
+		zap.L().Warn("no fields to update", zap.String("user_id", userID.Hex()))
+		return false, nil
+	}
+
+	// Always update updated_at timestamp
+	update = append(update, primitive.E{Key: "updated_at", Value: time.Now().UnixMilli()})
+
+	// Execute update
+	result, err := r.collection.UpdateOne(ctx, primitive.D{{Key: "_id", Value: *userID}}, primitive.D{{Key: "$set", Value: update}})
+	if err != nil {
+		zap.L().Error("error updating user", zap.Error(err), zap.String("user_id", userID.Hex()))
+		return false, domain.ErrUserInternalServerError
+	}
+
+	// Check if any document was updated
+	if result.MatchedCount == 0 {
+		zap.L().Warn("user not found for update", zap.String("user_id", userID.Hex()))
+		return false, domain.ErrUserNotFound
+	}
+
+	return result.ModifiedCount > 0, nil
 }

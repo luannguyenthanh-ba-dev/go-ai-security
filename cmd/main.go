@@ -87,7 +87,7 @@ func main() {
 	authService := authUseCase.NewAuthService(userService, jwtService)
 
 	// Initialize middleware
-	authMiddleware := middleware.NewMiddleware(jwtService)
+	authnMiddleware := middleware.NewMiddleware(jwtService)
 
 	// API routes
 	api := r.Group("/api/v1")
@@ -98,7 +98,7 @@ func main() {
 
 		// Protected routes (require authentication)
 		protected := api.Group("")
-		protected.Use(authMiddleware.AuthJWTMiddleware())
+		protected.Use(authnMiddleware.AuthnJWTMiddleware())
 		{
 			userHttp.RegisterUserProtectedRoutes(protected, userService)
 		}

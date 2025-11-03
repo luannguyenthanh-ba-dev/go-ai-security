@@ -31,4 +31,7 @@ var (
 
 	// Internal server errors
 	ErrUserInternalServerError = utils.NewCustomError("USER_INTERNAL_SERVER_ERROR", http.StatusInternalServerError, "internal server error")
+
+	// Not implemented errors
+	ErrUserUpdateFailed = utils.NewCustomError("USER_UPDATE_FAILED", http.StatusNotImplemented, "user update failed")
 )
