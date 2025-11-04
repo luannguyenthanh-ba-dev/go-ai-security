@@ -22,5 +22,6 @@ func RegisterUserProtectedRoutes(router *gin.RouterGroup, userService usecase.Us
 	{
 		users.GET("/me", userHandler.GetMe)
 		users.PUT("/me", userHandler.UpdateMe)
+		users.PUT("/me/passwords", userHandler.UpdateMyPassword)
 	}
 }

@@ -40,7 +40,10 @@ func (h *UserHandler) RegisterUser(c *gin.Context) {
 	// Using dto here
 	var data dto.CreateUserRequest
 	if err := c.ShouldBindJSON(&data); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "USER_INVALID_INPUT", err.Error())
+		utils.ErrorResponse(c,
+			domain.ErrUserInvalidInput.HTTPStatus(),
+			domain.ErrUserInvalidInput.Code(),
+			err.Error())
 		return
 	}
 
@@ -195,7 +198,7 @@ func (h *UserHandler) ViewUserInformation(c *gin.Context) {
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /users/me [put]
-func (h *UserHandler) UpdateMe( c *gin.Context) {
+func (h *UserHandler) UpdateMe(c *gin.Context) {
 	// Get the user id from the context
 	userID, exists := c.Get("request_user_id")
 	if !exists {
@@ -216,11 +219,78 @@ func (h *UserHandler) UpdateMe( c *gin.Context) {
 
 	var data = &dto.UpdateMyProfileRequest{}
 	if err := c.ShouldBindJSON(data); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "USER_INVALID_INPUT", err.Error())
+		utils.ErrorResponse(c,
+			domain.ErrUserInvalidInput.HTTPStatus(),
+			domain.ErrUserInvalidInput.Code(),
+			err.Error())
 		return
 	}
 
 	result, err := h.service.UpdateUserProfile(c.Request.Context(), &userObjectID, data)
+	if err != nil {
+		if ce, ok := err.(*utils.CustomError); ok {
+			utils.ErrorResponse(c, ce.HTTPStatus(), ce.Code(), ce.Error())
+			return
+		}
+		utils.ErrorResponse(c,
+			domain.ErrUserInternalServerError.HTTPStatus(),
+			domain.ErrUserInternalServerError.Code(),
+			domain.ErrUserInternalServerError.Error())
+		return
+	}
+	utils.SuccessResponse(c, http.StatusOK, result)
+}
+
+// UpdateMyPassword handles PUT /users/me/passwords request
+// @Summary Update my password
+// @Description Update my password
+// @Tags Users
+// @Security BearerAuth
+// @Accept json
+// @Produce json
+// @Param body body dto.UpdateMyPasswordRequest true "User information"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/me/passwords [put]
+func (h *UserHandler) UpdateMyPassword(c *gin.Context) {
+	userID, exists := c.Get("request_user_id")
+	if !exists {
+		utils.ErrorResponse(c,
+			domain.ErrUserNotFoundInContext.HTTPStatus(),
+			domain.ErrUserNotFoundInContext.Code(),
+			domain.ErrUserNotFoundInContext.Error())
+		return
+	}
+
+	userObjectID, err := primitive.ObjectIDFromHex(userID.(string))
+	if err != nil {
+		utils.ErrorResponse(c,
+			domain.ErrUserInvalidID.HTTPStatus(),
+			domain.ErrUserInvalidID.Code(),
+			domain.ErrUserInvalidID.Error())
+		return
+	}
+
+	var data = &dto.UpdateMyPasswordRequest{}
+
+	if err := c.ShouldBindJSON(data); err != nil {
+		utils.ErrorResponse(c,
+			domain.ErrUserInvalidInput.HTTPStatus(),
+			domain.ErrUserInvalidInput.Code(),
+			err.Error())
+		return
+	}
+
+	if data.NewPassword == data.OldPassword {
+		utils.ErrorResponse(c,
+			domain.ErrorMatchOldAndNewPassword.HTTPStatus(),
+			domain.ErrorMatchOldAndNewPassword.Code(),
+			domain.ErrorMatchOldAndNewPassword.Error())
+		return
+	}
+
+	result, err := h.service.UpdateUserPassword(c.Request.Context(), &userObjectID, data)
 	if err != nil {
 		if ce, ok := err.(*utils.CustomError); ok {
 			utils.ErrorResponse(c, ce.HTTPStatus(), ce.Code(), ce.Error())

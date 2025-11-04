@@ -26,3 +26,9 @@ type UpdateMyProfileRequest struct {
 type UpdateMyProfileResponse struct {
 	Updated bool `json:"updated" binding:"required"` // required, true if the profile is updated, false if the profile is not updated
 }
+
+type UpdateMyPasswordRequest struct {
+	OldPassword string `json:"old_password" binding:"required,min=6,max=20"` // required, min 6 characters, max 20 characters
+	NewPassword string `json:"new_password" binding:"required,min=6,max=20"` // required, min 6 characters, max 20 characters
+}
+

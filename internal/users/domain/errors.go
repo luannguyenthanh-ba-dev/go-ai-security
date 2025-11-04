@@ -24,6 +24,7 @@ var (
 	ErrUserEmailAlreadyExists    = utils.NewCustomError("USER_EMAIL_ALREADY_EXISTS", http.StatusConflict, "email already exists")
 	ErrUserWrongPassword         = utils.NewCustomError("USER_WRONG_PASSWORD", http.StatusUnauthorized, "wrong password")
 	ErrUserNotHasRole            = utils.NewCustomError("USER_NOT_HAS_ROLE", http.StatusForbidden, "user does not have the required role")
+	ErrorMatchOldAndNewPassword  = utils.NewCustomError("USER_MATCH_OLD_AND_NEW_PASSWORD", http.StatusBadRequest, "user update the same old and new password")
 
 	// Not found errors
 	ErrUserNotFound          = utils.NewCustomError("USER_NOT_FOUND", http.StatusNotFound, "user not found")
@@ -33,5 +34,6 @@ var (
 	ErrUserInternalServerError = utils.NewCustomError("USER_INTERNAL_SERVER_ERROR", http.StatusInternalServerError, "internal server error")
 
 	// Not implemented errors
-	ErrUserUpdateFailed = utils.NewCustomError("USER_UPDATE_FAILED", http.StatusNotImplemented, "user update failed")
+	ErrUserUpdateFailed         = utils.NewCustomError("USER_UPDATE_FAILED", http.StatusNotImplemented, "user update failed")
+	ErrUserUpdatePasswordFailed = utils.NewCustomError("USER_UPDATE_PASSWORD_FAILED", http.StatusNotImplemented, "user update password failed")
 )

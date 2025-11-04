@@ -19,6 +19,7 @@ type UserService interface {
 	RegisterUser(ctx context.Context, user *domain.UserEntity) (*domain.UserEntity, error)
 	FindAUserByFilters(ctx context.Context, filters repository.UserFilters) (*domain.UserEntity, error)
 	UpdateUserProfile(ctx context.Context, userID *primitive.ObjectID, data *dto.UpdateMyProfileRequest) (*dto.UpdateMyProfileResponse, error)
+	UpdateUserPassword(ctx context.Context, userID *primitive.ObjectID, data *dto.UpdateMyPasswordRequest) (*dto.UpdateMyProfileResponse, error)
 }
 
 type userService struct {
@@ -151,5 +152,47 @@ func (uSvc *userService) UpdateUserProfile(
 	if !ok {
 		return nil, domain.ErrUserUpdateFailed
 	}
-	return &dto.UpdateMyProfileResponse{Updated: true}, nil
+	return &dto.UpdateMyProfileResponse{Updated: ok}, nil
+}
+
+func (uSvc *userService) UpdateUserPassword(
+	ctx context.Context,
+	userID *primitive.ObjectID,
+	data *dto.UpdateMyPasswordRequest) (*dto.UpdateMyProfileResponse, error) {
+	// Create context with timeout for complex operation (read + write)
+	updateCtx, updateCancel := context.WithTimeout(ctx, shared.TimeoutForComplexOperation)
+	defer updateCancel()
+
+	// Find user first
+	user, err := uSvc.repo.FindOneByFilters(updateCtx, repository.UserFilters{ID: userID})
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
+
+	// Compare old password
+	if !utils.ComparePassword(data.OldPassword, user.Password) {
+		return nil, domain.ErrUserWrongPassword
+	}
+
+	// Hash new password
+	hashedPassword, err := utils.HashPassword(data.NewPassword, uSvc.saltRounds)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update user password
+	updateData := &domain.UserEntity{
+		Password: hashedPassword,
+	}
+	ok, err := uSvc.repo.UpdateBasicInfoByID(updateCtx, userID, updateData)
+	if err != nil {
+		return nil, err
+	}
+	if !ok {
+		return nil, domain.ErrUserUpdatePasswordFailed
+	}
+	return &dto.UpdateMyProfileResponse{Updated: ok}, nil
 }
