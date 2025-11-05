@@ -25,7 +25,11 @@ import (
 
 	// Auth
 	authHttp "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/delivery/http"
+	authRepository "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/repository"
 	authUseCase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/usecase"
+
+	//
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/infrastructure/cache"
 	appLogger "github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/logger"
 	middleware "github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/middleware"
 	swaggerFiles "github.com/swaggo/files"
@@ -66,6 +70,7 @@ func main() {
 
 	// Close the database connection when the application exits
 	defer cfg.Database.Close()
+	defer cfg.CacheConnection.Close()
 
 	// Create a new Gin instance
 	r := gin.New()
@@ -78,13 +83,17 @@ func main() {
 	// Initialize JWT service
 	jwtService := authUseCase.NewJWTService(cfg.Env.JWTSecret, time.Duration(cfg.Env.JWTExpiresIn)*time.Second)
 
+	// Initialize cache (infrastructure abstraction)
+	cacheClient := cache.NewCacheClient(cfg.CacheConnection.GetRedisClient())
+	authCacheRepository := authRepository.NewAuthCacheRepository(cacheClient)
+
 	// Collections
-	userCollection := cfg.Database.Database.Collection("users")
+	userCollection := cfg.Database.GetMongoDatabase().Collection("users")
 
 	// Initialize services and dependencies
 	mongoUserRepository := userRepository.NewMongoUserRepository(userCollection)
 	userService := userUseCase.NewUserService(mongoUserRepository, cfg.Env.PasswordHashSaltRounds)
-	authService := authUseCase.NewAuthService(userService, jwtService)
+	authService := authUseCase.NewAuthService(userService, jwtService, authCacheRepository)
 
 	// Initialize middleware
 	authnMiddleware := middleware.NewMiddleware(jwtService)

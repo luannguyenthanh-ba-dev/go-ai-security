@@ -6,7 +6,8 @@ import "time"
 
 type Config struct {
 	Env      *Env      // Environment variables configuration
-	Database *Database // Database configuration
+	Database Database // Database configuration
+	CacheConnection    CacheConnection    // Cache configuration
 }
 
 func LoadConfig() (*Config, error) {
@@ -27,8 +28,21 @@ func LoadConfig() (*Config, error) {
 		return nil, err
 	}
 
+	// Load cache configuration
+	cacheConnection, err := NewRedisCacheConnection(RedisConfig{
+		Host:       env.RedisHost,
+		Port:       env.RedisPort,
+		DB:         env.RedisDB,
+		MaxRetries: 4,
+		RetryDelay: 2 * time.Second,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return &Config{
-		Env: env,
+		Env:      env,
 		Database: database,
+		CacheConnection:    cacheConnection,
 	}, nil
 }

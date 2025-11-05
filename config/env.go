@@ -16,6 +16,9 @@ type Env struct {
 	MongoURI               string `mapstructure:"MONGO_URI"`
 	MongoDatabase          string `mapstructure:"MONGO_DATABASE"`
 	RedisURL               string `mapstructure:"REDIS_URL"`
+	RedisHost              string `mapstructure:"REDIS_HOST"`
+	RedisPort              int    `mapstructure:"REDIS_PORT"`
+	RedisDB                int    `mapstructure:"REDIS_DB"`
 	EmailResendAPIKey      string `mapstructure:"EMAIL_RESEND_API_KEY"`
 	PasswordHashSaltRounds int    `mapstructure:"PASSWORD_HASH_SALT_ROUNDS"`
 	JWTSecret              string `mapstructure:"JWT_SECRET"`
