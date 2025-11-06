@@ -1,11 +1,13 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/usecase"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/utils"
 	"go.uber.org/zap"
 )
@@ -27,6 +29,11 @@ var (
 		"AUTHORIZATION_INTERNAL_SERVER_ERROR",
 		http.StatusInternalServerError,
 		"internal server error while authorizing",
+	)
+	ErrAuthorizationTokenNotInWhiteList = utils.NewCustomError(
+		"AUTHORIZATION_TOKEN_NOT_IN_WHITE_LIST",
+		http.StatusForbidden,
+		"token not in white list",
 	)
 )
 
@@ -82,7 +89,39 @@ func (m *middleware) AuthnJWTMiddleware() gin.HandlerFunc {
 			c.Abort() // Stop processing the request chain
 			return
 		}
-
+		// Verify token in white list
+		verifyTokenCtx, cancel := context.WithTimeout(c.Request.Context(), shared.TimeoutForCacheOperation)
+		defer cancel() // Ensure cancel is always called, even if there's a panic
+		ok, err := m.jwtService.VerifyAccessTokenInWhiteList(verifyTokenCtx, claims.UserID, token)
+		if err != nil {
+			zap.L().Error("Failed to verify token in white list", zap.Error(err))
+			if ce, ok := err.(*utils.CustomError); ok {
+				utils.ErrorResponse(c,
+					ce.HTTPStatus(),
+					ce.Code(),
+					ce.Error(),
+				)
+			} else {
+				utils.ErrorResponse(c,
+					ErrAuthorizationInternalServerError.HTTPStatus(),
+					ErrAuthorizationInternalServerError.Code(),
+					ErrAuthorizationInternalServerError.Error(),
+				)
+			}
+			c.Abort() // Stop processing the request chain
+			return
+		}
+		if !ok {
+			zap.L().Error("Token not in white list")
+			utils.ErrorResponse(c,
+				ErrAuthorizationTokenNotInWhiteList.HTTPStatus(),
+				ErrAuthorizationTokenNotInWhiteList.Code(),
+				ErrAuthorizationTokenNotInWhiteList.Error(),
+			)
+			c.Abort() // Stop processing the request chain
+			return
+		}
+		// Set claims and request user id to context
 		c.Set("claims", claims)
 		c.Set("request_user_id", claims.UserID)
 		c.Next()

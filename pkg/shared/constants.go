@@ -10,4 +10,6 @@ const (
 	TimeoutForWriteOperation = 10 * time.Second
 	// TimeoutForComplexOperation - timeout for complex operations (multiple DB calls)
 	TimeoutForComplexOperation = 15 * time.Second
+	// TimeoutForCacheOperation - timeout for cache operations (Get, Set, Del)
+	TimeoutForCacheOperation = 2 * time.Second
 )

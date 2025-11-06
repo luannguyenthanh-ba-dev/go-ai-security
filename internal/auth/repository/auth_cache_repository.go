@@ -16,6 +16,7 @@ var (
 // AuthCacheRepository defines the interface for auth cache operations
 type AuthCacheRepository interface {
 	AddAccessTokenToWhiteList(ctx context.Context, uID string, accessToken string, ttl time.Duration) (bool, error)
+	GetAccessTokenFromWhiteList(ctx context.Context, uID string) (string, error)
 }
 
 type authCacheRepository struct {
@@ -30,4 +31,9 @@ func NewAuthCacheRepository(cacheClient cache.CacheClient) AuthCacheRepository {
 func (r *authCacheRepository) AddAccessTokenToWhiteList(ctx context.Context, uID string, accessToken string, ttl time.Duration) (bool, error) {
 	key := fmt.Sprintf(AccessTokenWhiteListKey, uID)
 	return r.cacheClient.Set(ctx, key, accessToken, ttl)
+}
+
+func (r *authCacheRepository) GetAccessTokenFromWhiteList(ctx context.Context, uID string) (string, error) {
+	key := fmt.Sprintf(AccessTokenWhiteListKey, uID)
+	return r.cacheClient.Get(ctx, key)
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/domain"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/dto"
-	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/repository"
 	usersRepository "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/repository"
 	userUseCase "github.com/luannguyenthanh-ba-dev/go-ai-security/internal/users/usecase"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
@@ -22,14 +21,10 @@ type AuthService interface {
 type authService struct {
 	userService         userUseCase.UserService
 	jwtService          JWTService
-	authCacheRepository repository.AuthCacheRepository
 }
 
-func NewAuthService(
-	userService userUseCase.UserService,
-	jwtService JWTService,
-	authCacheRepository repository.AuthCacheRepository) AuthService {
-	return &authService{userService: userService, jwtService: jwtService, authCacheRepository: authCacheRepository}
+func NewAuthService( userService userUseCase.UserService, jwtService JWTService) AuthService {
+	return &authService{userService: userService, jwtService: jwtService}
 }
 
 func (service *authService) Login(ctx context.Context, data *dto.LoginRequest) (*domain.JWTAuthEntity, error) {
@@ -72,7 +67,7 @@ func (service *authService) Login(ctx context.Context, data *dto.LoginRequest) (
 		ttl := time.Duration(auth.ExpiredIn) * time.Second + time.Duration(randomTTL) * time.Second
 
 		// Cache the token
-		success, err := service.authCacheRepository.AddAccessTokenToWhiteList(backgroundCtx, user.ID.Hex(), auth.AccessToken, ttl)
+		ok, err := service.jwtService.AddAccessTokenToWhiteList(backgroundCtx, user.ID.Hex(), auth.AccessToken, ttl)
 
 		// Log the result (non-blocking, doesn't affect response)
 		if err != nil {
@@ -80,7 +75,7 @@ func (service *authService) Login(ctx context.Context, data *dto.LoginRequest) (
 				zap.String("userID", user.ID.Hex()),
 				zap.Error(err),
 			)
-		} else if success {
+		} else if ok {
 			zap.L().Debug("access token cached in whitelist successfully",
 				zap.String("userID", user.ID.Hex()),
 				zap.Duration("ttl", ttl),

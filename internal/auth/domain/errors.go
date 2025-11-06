@@ -56,4 +56,8 @@ var (
 
 	// Unauthorized errors
 	ErrInvalidPassword = utils.NewCustomError("INVALID_PASSWORD", http.StatusUnauthorized, "invalid password")
+
+	// Forbidden errors
+	ErrTokenNotInWhiteList = utils.NewCustomError("TOKEN_NOT_IN_WHITE_LIST", http.StatusForbidden, "token not in white list")
+	ErrNotMatchTokenInWhiteList = utils.NewCustomError("NOT_MATCH_TOKEN_IN_WHITE_LIST", http.StatusForbidden, "not match token in white list")
 )

@@ -34,21 +34,34 @@ func (c *RedisCacheClient) Set(ctx context.Context, key string, value interface{
 		return false, ErrCacheKeyEmpty
 	}
 
-	// Marshal the value to JSON - convert the value to a JSON
-	jsonData, err := json.Marshal(value)
-	if err != nil {
-		zap.L().Error("failed to marshal cache value",
-			zap.String("key", key),
-			zap.Error(err),
-		)
-		return false, err
+	var writeData interface{}
+	switch v := value.(type) {
+	case string:
+		// String: pass directly to Redis (no encoding needed)
+		writeData = v
+	case []byte:
+		// []byte: pass directly to Redis (no encoding needed)
+		writeData = v
+	default:
+		// Complex types (struct, map, slice, array, etc.): marshal to JSON
+		jsonData, err := json.Marshal(v)
+		if err != nil {
+			zap.L().Error("failed to marshal cache value to JSON",
+				zap.String("key", key),
+				zap.Error(err),
+			)
+			return false, err
+		}
+		// Store JSON as []byte or string - Redis will handle it
+		writeData = jsonData
 	}
 
-	// Set the value in the cache - use the JSON as the value - The driver will handle the conversion to string
+	// Set the value in the cache
 	// - If TTL is 0, the value will be stored forever
 	// - If TTL is negative, the value will be stored forever
 	// - If TTL is positive, the value will be stored for the given duration
-	_, err = c.client.Set(ctx, key, jsonData, ttl).Result()
+	// Redis client automatically handles string, []byte, and other types
+	_, err := c.client.Set(ctx, key, writeData, ttl).Result()
 	if err != nil {
 		zap.L().Error("failed to set cache",
 			zap.String("key", key),
@@ -61,37 +74,25 @@ func (c *RedisCacheClient) Set(ctx context.Context, key string, value interface{
 }
 
 // Get gets a value by key
-func (c *RedisCacheClient) Get(ctx context.Context, key string) (interface{}, error) {
+func (c *RedisCacheClient) Get(ctx context.Context, key string) (string, error) {
 	// Validate the key
 	if key == "" {
-		return nil, ErrCacheKeyEmpty
+		return "", ErrCacheKeyEmpty
 	}
-
 	// Get the value from the cache
 	value, err := c.client.Get(ctx, key).Result()
 	if err != nil {
 		if err == redis.Nil {
-			return nil, nil // Cache miss - return nil, nil
+			return "", nil // Cache miss - return nil, nil
 		}
 		zap.L().Error("failed to get cache",
 			zap.String("key", key),
 			zap.Error(err),
 		)
-		return nil, err
+		return "", err
 	}
 
-	// Unmarshal JSON back to interface{}
-	// Note: This will return map[string]interface{} for objects, []interface{} for arrays
-	var result interface{}
-	if err := json.Unmarshal([]byte(value), &result); err != nil {
-		zap.L().Error("failed to unmarshal cache value",
-			zap.String("key", key),
-			zap.Error(err),
-		)
-		return nil, err
-	}
-
-	return result, nil
+	return value, nil
 }
 
 // Del deletes a key from the cache

@@ -80,12 +80,12 @@ func main() {
 	// Basic health endpoint
 	r.GET("/health", healthHandler)
 
-	// Initialize JWT service
-	jwtService := authUseCase.NewJWTService(cfg.Env.JWTSecret, time.Duration(cfg.Env.JWTExpiresIn)*time.Second)
-
 	// Initialize cache (infrastructure abstraction)
 	cacheClient := cache.NewCacheClient(cfg.CacheConnection.GetRedisClient())
 	authCacheRepository := authRepository.NewAuthCacheRepository(cacheClient)
+
+	// Initialize JWT service
+	jwtService := authUseCase.NewJWTService(cfg.Env.JWTSecret, time.Duration(cfg.Env.JWTExpiresIn)*time.Second, authCacheRepository)
 
 	// Collections
 	userCollection := cfg.Database.GetMongoDatabase().Collection("users")
@@ -93,7 +93,7 @@ func main() {
 	// Initialize services and dependencies
 	mongoUserRepository := userRepository.NewMongoUserRepository(userCollection)
 	userService := userUseCase.NewUserService(mongoUserRepository, cfg.Env.PasswordHashSaltRounds)
-	authService := authUseCase.NewAuthService(userService, jwtService, authCacheRepository)
+	authService := authUseCase.NewAuthService(userService, jwtService)
 
 	// Initialize middleware
 	authnMiddleware := middleware.NewMiddleware(jwtService)

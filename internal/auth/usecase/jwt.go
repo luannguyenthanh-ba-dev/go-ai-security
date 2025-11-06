@@ -1,12 +1,16 @@
 package usecase
 
 import (
+	"context"
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/domain"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/internal/auth/repository"
 	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/shared"
+	"github.com/luannguyenthanh-ba-dev/go-ai-security/pkg/utils"
 )
 
 // JWT
@@ -19,17 +23,21 @@ type RefreshClaims struct {
 type JWTService interface {
 	GenerateJWT(claims *shared.Claims) (*domain.JWTAuthEntity, error)
 	VerifyAccessToken(token string) (*shared.Claims, error)
+	AddAccessTokenToWhiteList(ctx context.Context, userID string, accessToken string, ttl time.Duration) (bool, error)
+	VerifyAccessTokenInWhiteList(ctx context.Context, userID string, token string) (bool, error)
 }
 
 type jwtService struct {
-	secret    string
-	expiresIn time.Duration
+	secret              string
+	expiresIn           time.Duration
+	authCacheRepository repository.AuthCacheRepository
 }
 
-func NewJWTService(secret string, expiresIn time.Duration) JWTService {
+func NewJWTService(secret string, expiresIn time.Duration, authCacheRepository repository.AuthCacheRepository) JWTService {
 	return &jwtService{
-		secret:    secret,
-		expiresIn: expiresIn,
+		secret:              secret,
+		expiresIn:           expiresIn,
+		authCacheRepository: authCacheRepository,
 	}
 }
 
@@ -105,4 +113,26 @@ func (jService *jwtService) VerifyAccessToken(accessToken string) (*shared.Claim
 	}
 
 	return claims, nil
+}
+
+func (jService *jwtService) AddAccessTokenToWhiteList(ctx context.Context, userID string, accessToken string, ttl time.Duration) (bool, error) {
+	return jService.authCacheRepository.AddAccessTokenToWhiteList(ctx, userID, accessToken, ttl)
+}
+
+func (jService *jwtService) VerifyAccessTokenInWhiteList(ctx context.Context, userID string, token string) (bool, error) {
+	tokenInWhiteList, err := jService.authCacheRepository.GetAccessTokenFromWhiteList(ctx, userID)
+	if err != nil {
+		return false, utils.NewCustomError(
+			"ERROR_VERIFY_ACCESS_TOKEN_IN_WHITE_LIST",
+			http.StatusInternalServerError,
+			err.Error(),
+		)
+	}
+	if tokenInWhiteList == "" {
+		return false, domain.ErrTokenNotInWhiteList
+	}
+	if tokenInWhiteList != token {
+		return false, domain.ErrNotMatchTokenInWhiteList
+	}
+	return true, nil
 }
