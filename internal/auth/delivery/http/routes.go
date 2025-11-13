@@ -11,13 +11,12 @@ func RegisterAuthPublicRoutes(router *gin.RouterGroup, authService usecase.AuthS
 	auth := router.Group("/auth")
 	{
 		auth.POST("/login", authHandler.Login)
+		auth.POST("/tokens/refresh", authHandler.RefreshAccessToken)
 	}
 }
 
 func RegisterAuthProtectedRoutes(router *gin.RouterGroup, authService usecase.AuthService) {
-	authHandler := NewAuthHandler(authService)
-	auth := router.Group("/auth")
-	{
-		auth.POST("/tokens/refresh", authHandler.RefreshAccessToken)
-	}
+	// authHandler := NewAuthHandler(authService)
+	// auth := router.Group("/auth")
+	// {}
 }

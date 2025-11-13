@@ -25,6 +25,7 @@ type JWTService interface {
 	VerifyAccessToken(token string) (*shared.Claims, error)
 	AddAccessTokenToWhiteList(ctx context.Context, userID string, accessToken string, ttl time.Duration) (bool, error)
 	VerifyAccessTokenInWhiteList(ctx context.Context, userID string, token string) (bool, error)
+	VerifyRefreshToken(refreshToken string) (*RefreshClaims, error)
 }
 
 type jwtService struct {
@@ -135,4 +136,34 @@ func (jService *jwtService) VerifyAccessTokenInWhiteList(ctx context.Context, us
 		return false, domain.ErrNotMatchTokenInWhiteList
 	}
 	return true, nil
+}
+
+func (jService *jwtService) VerifyRefreshToken(refreshToken string) (*RefreshClaims, error) {
+	token, err := jwt.ParseWithClaims(refreshToken, &RefreshClaims{}, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, domain.ErrJWTRefreshTokenInvalidSigningMethod
+		}
+		return []byte(jService.secret), nil
+	})
+	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, domain.ErrJWTRefreshTokenExpired
+		}
+		return nil, domain.ErrorParsingJWTRefreshToken
+	}
+	if !token.Valid {
+		return nil, domain.ErrJWTRefreshTokenInvalid
+	}
+
+	// Type assertion to extract custom claims
+	claims, ok := token.Claims.(*RefreshClaims)
+	if !ok {
+		return nil, domain.ErrInvalidJWTRefreshTokenClaims
+	}
+	// Additional expiration check (defensive programming)
+	// jwt/v5 automatically validates expiration, but we check explicitly for clarity
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
+		return nil, domain.ErrJWTRefreshTokenExpired
+	}
+	return claims, nil
 }

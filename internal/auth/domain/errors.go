@@ -36,6 +36,22 @@ var (
 		http.StatusUnauthorized,
 		"error parsing jwt token",
 	)
+	ErrJWTRefreshTokenInvalidSigningMethod = utils.NewCustomError("JWT_REFRESH_TOKEN_INVALID_SIGNING_METHOD",
+		http.StatusUnauthorized,
+		"invalid jwt refresh token signing method",
+	)
+	ErrorParsingJWTRefreshToken = utils.NewCustomError("ERROR_PARSING_JWT_REFRESH_TOKEN",
+		http.StatusUnauthorized,
+		"error parsing jwt refresh token",
+	)
+	ErrInvalidJWTRefreshTokenClaims = utils.NewCustomError("INVALID_JWT_REFRESH_TOKEN_CLAIMS",
+		http.StatusUnauthorized,
+		"invalid jwt refresh token claims",
+	)
+	ErrInvalidObjectID = utils.NewCustomError("INVALID_OBJECT_ID",
+		http.StatusUnauthorized,
+		"invalid object id",
+	)
 
 	// Not found errors
 	ErrAuthUserNotFound = utils.NewCustomError("AUTH_USER_NOT_FOUND", http.StatusNotFound, "user not found")
@@ -45,7 +61,7 @@ var (
 		http.StatusInternalServerError,
 		"internal server error",
 	)
-	ErrSigningAccessTokenFailed  = utils.NewCustomError("SIGNING_ACCESS_TOKEN_FAILED",
+	ErrSigningAccessTokenFailed = utils.NewCustomError("SIGNING_ACCESS_TOKEN_FAILED",
 		http.StatusInternalServerError,
 		"failed to sign access token",
 	)
@@ -58,6 +74,6 @@ var (
 	ErrInvalidPassword = utils.NewCustomError("INVALID_PASSWORD", http.StatusUnauthorized, "invalid password")
 
 	// Forbidden errors
-	ErrTokenNotInWhiteList = utils.NewCustomError("TOKEN_NOT_IN_WHITE_LIST", http.StatusForbidden, "token not in white list")
+	ErrTokenNotInWhiteList      = utils.NewCustomError("TOKEN_NOT_IN_WHITE_LIST", http.StatusForbidden, "token not in white list")
 	ErrNotMatchTokenInWhiteList = utils.NewCustomError("NOT_MATCH_TOKEN_IN_WHITE_LIST", http.StatusForbidden, "not match token in white list")
 )

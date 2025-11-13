@@ -57,10 +57,38 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, auth)
 }
 
+// RefreshAccessToken handles POST /auth/tokens/refresh request
+// @Summary Refresh access token
+// @Description Refresh access token with refresh token
+// @Tags Auth
+// @Accept json
+// @Produce json
+// @Param body body dto.RefreshAccessTokenRequest true "Refresh access token request"
+// @Success 201 {object} domain.JWTAuthEntity
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/tokens/refresh [post]
 func (h *AuthHandler) RefreshAccessToken(c *gin.Context) {
 	var data dto.RefreshAccessTokenRequest
 	if err := c.ShouldBindJSON(&data); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, "AUTH_INVALID_INPUT", err.Error())
 		return
 	}
+
+	zap.L().Info("Refresh access token request received", zap.Any("data", data))
+
+	auth, err := h.service.RefreshAccessToken(c.Request.Context(), &data)
+	if err != nil {
+		if ce, ok := err.(*utils.CustomError); ok {
+			utils.ErrorResponse(c, ce.HTTPStatus(), ce.Code(), ce.Error())
+			return
+		}
+		utils.ErrorResponse(c,
+			domain.ErrAuthInternalServerError.HTTPStatus(),
+			domain.ErrAuthInternalServerError.Code(),
+			domain.ErrAuthInternalServerError.Error())
+		return
+	}
+	utils.SuccessResponse(c, http.StatusCreated, auth)
 }
